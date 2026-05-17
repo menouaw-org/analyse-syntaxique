@@ -16,12 +16,16 @@ parse_line() {
   local line="$1"
   local filter_type="$2"
 
+  local pattern="^\[([^]]+)\][[:space:]]\[(error|notice)\][[:space:]](.*)"
+  local forbidden_message="Directory index forbidden by rule"
+
+
 #  echo "LINE=${line}"
 #  echo "FILTER=${filter_type}"
 
 #  <extraire le timestamp, le type et le message>
 #  [timestamp] [type] message
-  local pattern="^\[([^]]+)\][[:space:]]\[(error|notice)\][[:space:]](.*)"
+
   if [[ "$line" =~ $pattern ]]; then
     local timestamp="${BASH_REMATCH[1]}"
     local type="${BASH_REMATCH[2]}"
@@ -39,6 +43,12 @@ parse_line() {
   if [[ "$filter_type" == "all" || "$filter_type" == "$type" ]]; then
 #      <appeler print_record si la ligne doit être affichée>
     print_record "$timestamp" "$type" "$message"
+
+    # [Sun Dec 04 05:15:09 2005] [error] [client 222.166.160.184] Directory index forbidden by rule: /var/www/html/
+    if [[ "$message" == *"$forbidden_message"* ]]; then
+      echo "ACCES REFUSE"
+    fi
+
   fi
 }
 
