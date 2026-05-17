@@ -16,9 +16,9 @@ parse_line() {
   local line="$1"
   local filter_type="$2"
 
-  local pattern="^\[([^]]+)\][[:space:]]\[(error|notice)\][[:space:]](.*)"
+  local parsing_pattern="^\[([^]]+)\][[:space:]]\[(error|notice)\][[:space:]](.*)"
   local forbidden_message="Directory index forbidden by rule"
-
+  local ip_pattern="\[client[[:space:]](.*)\]"
 
 #  echo "LINE=${line}"
 #  echo "FILTER=${filter_type}"
@@ -26,7 +26,7 @@ parse_line() {
 #  <extraire le timestamp, le type et le message>
 #  [timestamp] [type] message
 
-  if [[ "$line" =~ $pattern ]]; then
+  if [[ "$line" =~ $parsing_pattern ]]; then
     local timestamp="${BASH_REMATCH[1]}"
     local type="${BASH_REMATCH[2]}"
     local message="${BASH_REMATCH[3]}"
@@ -47,6 +47,11 @@ parse_line() {
     # [Sun Dec 04 05:15:09 2005] [error] [client 222.166.160.184] Directory index forbidden by rule: /var/www/html/
     if [[ "$message" == *"$forbidden_message"* ]]; then
       echo "ACCES REFUSE"
+
+      if [[ "$message" =~ $ip_pattern ]]; then
+        local client_ip="${BASH_REMATCH[1]}"
+        echo "CLIENT REFUSE=${client_ip}"
+      fi
     fi
 
   fi
@@ -70,9 +75,10 @@ main() {
   parse_log_file "$log_file" "$filter_type"
 }
 
-#parse_line "[Sun Dec 04 04:47:44 2005] [notice] workerEnv.init() ok /etc/httpd/conf/workers2.properties" "all"
-#parse_line "[Sun Dec 04 04:47:44 2005] [notice] workerEnv.init() ok /etc/httpd/conf/workers2.properties" "notice"
-#parse_line "[Sun Dec 04 04:47:44 2005] [notice] workerEnv.init() ok /etc/httpd/conf/workers2.properties" "error"
-#parse_line "[Sun Dec 04 04:47:44 2005] [error] mod_jk child workerEnv in error state 6" "error"
+parse_line "[Sun Dec 04 04:47:44 2005] [notice] workerEnv.init() ok /etc/httpd/conf/workers2.properties" "all"
+parse_line "[Sun Dec 04 04:47:44 2005] [notice] workerEnv.init() ok /etc/httpd/conf/workers2.properties" "notice"
+parse_line "[Sun Dec 04 04:47:44 2005] [notice] workerEnv.init() ok /etc/httpd/conf/workers2.properties" "error"
+parse_line "[Sun Dec 04 04:47:44 2005] [error] mod_jk child workerEnv in error state 6" "error"
+parse_line "[Sun Dec 04 05:15:09 2005] [error] [client 222.166.160.184] Directory index forbidden by rule: /var/www/html/" "all"
 
-main "$@"
+#main "$@"
